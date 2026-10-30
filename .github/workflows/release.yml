@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '_meta.lua'
+      - '*.lua'
+      - 'common/*.lua'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from _meta.lua
+        id: meta
+        run: |
+          version=$(grep -oP 'version\s*=\s*"\K[^"]+' _meta.lua)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check if release already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${{ steps.meta.outputs.version }}" &>/dev/null; then
+            echo "release_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout game-common
+        if: steps.check.outputs.release_exists == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: t2ym5u/game-common
+          path: _game_common
+
+      - name: Checkout sudoku-common
+        if: steps.check.outputs.release_exists == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: t2ym5u/sudoku-common
+          path: _sudoku_common
+
+      - name: Build ZIP
+        if: steps.check.outputs.release_exists == 'false'
+        run: |
+          PLUGIN="${GITHUB_REPOSITORY##*/}"
+          PLUGIN_DIR="/tmp/${PLUGIN}"
+          mkdir -p "${PLUGIN_DIR}/common"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='common' \
+            --exclude='_game_common' --exclude='_sudoku_common' \
+            --exclude='test_*.lua' --exclude='.busted' \
+            . "${PLUGIN_DIR}/"
+          # common/ is a committed symlink naming the shared library this
+          # plugin uses. It dangles in an isolated checkout, so resolve it by
+          # name -- never by testing for a file *through* it. That test
+          # ("is common/base_board.lua readable?") failed for every sudoku
+          # variant and silently fell through to game-common, producing a zip
+          # whose require("common/base_board_widget") could not resolve.
+          LIB="$(readlink common 2>/dev/null || true)"
+          case "${LIB##*/}" in
+            sudoku-common) SRC=_sudoku_common ;;
+            game-common)   SRC=_game_common ;;
+            *)             SRC="" ;;
+          esac
+          if [ -n "$SRC" ]; then
+            rsync -a --exclude='.git' --exclude='.github' "$SRC/" "${PLUGIN_DIR}/common/"
+          elif [ -d common ]; then
+            # A plugin that vendors its own diverged copy, not a symlink.
+            cp common/*.lua "${PLUGIN_DIR}/common/"
+          fi
+          cd /tmp
+          zip -r "${PLUGIN}.zip" "${PLUGIN}/"
+          echo "ZIP=/tmp/${PLUGIN}.zip" >> "$GITHUB_ENV"
+          echo "PLUGIN=${PLUGIN}" >> "$GITHUB_ENV"
+
+      - name: Create release
+        if: steps.check.outputs.release_exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.meta.outputs.version }}" \
+            --title "v${{ steps.meta.outputs.version }}" \
+            --notes "Extract \`${PLUGIN}.zip\` into your KOReader \`plugins/\` folder.
+          The \`common/\` subdirectory is bundled in the archive." \
+            "$ZIP"
