@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.0.1] - 2026-11-04
+
+### Changed
+- Uses less memory: the sync code loads the first time a check runs, not
+  when KOReader starts.
+
 ## [1.0.0] - 2026-10-30
 
 ### Added
