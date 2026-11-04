@@ -21,6 +21,22 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
+-- The sync engine loads the first time a check runs, not when KOReader
+-- starts: KOReader loads every plugin at startup and keeps it all session.
+-- KOReader has put package.path back by then, so our directory is added
+-- again while the module loads.
+local function lazyrequire(name)
+    local saved = package.path
+    package.path = _dir .. "?.lua;" .. _dir .. "common/?.lua;" .. saved
+    local ok, mod = pcall(lrequire, name)
+    package.path = saved
+    if not package.path:find(_dir .. "common/?.lua", 1, true) then
+        package.path = package.path .. ";" .. _dir .. "common/?.lua"
+    end
+    if not ok then error(mod, 0) end
+    return mod
+end
+
 local BD              = require("ui/bidi")
 local ConfirmBox      = require("ui/widget/confirmbox")
 local DataStorage     = require("datastorage")
@@ -40,7 +56,6 @@ local _    = i18n
 i18n.extend(lrequire("i18n_fr"))
 
 local L    = lrequire("bookdrop_logic")
-local Sync = lrequire("bookdrop_sync")
 
 local KOOFR_URL = "https://app.koofr.net/dav/Koofr/"
 local BIG_FILE  = 1024 * 1024 -- show a progress message from this size on
@@ -62,7 +77,7 @@ end
 
 local function engine()
     if not sync_engine then
-        sync_engine = Sync.new{
+        sync_engine = lazyrequire("bookdrop_sync").new{
             http       = require("socket.http"),
             ltn12      = require("ltn12"),
             mime       = require("mime"),
