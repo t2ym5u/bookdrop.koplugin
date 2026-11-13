@@ -25,6 +25,12 @@ function L.trim(s)
     return (s:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
+-- "user:password" for Basic auth. Both are trimmed: a space typed (unseen) at
+-- either end of a masked password field turns a good password into a 401.
+function L.credentials(username, password)
+    return L.trim(username or "") .. ":" .. L.trim(password or "")
+end
+
 -- Percent-decoding for URL *paths*: "+" is a literal plus here, not a space.
 function L.urlDecode(s)
     return (s:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
@@ -411,11 +417,13 @@ end
 ---------------------------------------------------------------------------
 
 -- Should an *automatic* check start now?
--- s = { enabled, configured, in_flight, reading, now, last_auto, interval }
--- Returns ok, reason ("disabled", "unconfigured", "busy", "reading", "throttled").
+-- s = { enabled, configured, paused, in_flight, reading, now, last_auto, interval }
+-- Returns ok, reason ("disabled", "unconfigured", "paused", "busy", "reading",
+-- "throttled").
 function L.shouldAutoCheck(s)
     if not s.enabled then return false, "disabled" end
     if not s.configured then return false, "unconfigured" end
+    if s.paused then return false, "paused" end
     if s.in_flight then return false, "busy" end
     if s.reading then return false, "reading" end
     local interval = s.interval or L.AUTO_INTERVAL
@@ -423,6 +431,13 @@ function L.shouldAutoCheck(s)
         return false, "throttled"
     end
     return true
+end
+
+-- Errors after which automatic checks stop until the settings change or a
+-- manual check succeeds: retrying them only adds failed logins, and servers
+-- such as Koofr answer those with a temporary block (429).
+function L.pausesAutoCheck(error_key)
+    return error_key == "auth" or error_key == "rate_limited"
 end
 
 -- Total timeout for downloading `size` bytes: generous, assumes >= 20 KB/s.
@@ -452,6 +467,7 @@ function L.classifyError(code, err, what)
     end
     if code == 401 then return "auth" end
     if code == 403 then return "forbidden" end
+    if code == 429 then return "rate_limited" end
     if code == 404 then return what == "folder" and "folder_missing" or "not_found" end
     if code == 405 or code == 501 then return "not_webdav" end
     if code == 507 then return "server_full" end

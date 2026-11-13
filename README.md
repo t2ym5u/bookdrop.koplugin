@@ -127,6 +127,12 @@ toast says "2 new books in Book Drop", and the file browser is refreshed
 if it is showing the Book Drop folder. Errors during automatic checks are
 silent (logged, and shown under *Last check* in the menu).
 
+After a refused login, or when the server blocks connections for a while
+(HTTP 429, "too many attempts"), automatic checks pause: retrying with the
+same password would only extend the block. They resume as soon as the
+server settings are changed (or imported) or a *Check now* / *Test
+connection* succeeds.
+
 ## Settings
 
 | Setting | Default |

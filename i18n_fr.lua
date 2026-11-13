@@ -9,6 +9,16 @@ return {
     ["%1 new books:"] = { fr = "%1 nouveaux livres :", es = "%1 libros nuevos:", de = "%1 neue Bücher:" },
     ["%1 downloaded"] = { fr = "%1 téléchargé(s)", es = "%1 descargado(s)", de = "%1 heruntergeladen" },
     ["A check is already running."] = { fr = "Une vérification est déjà en cours.", es = "Ya hay una comprobación en curso.", de = "Es läuft bereits eine Prüfung." },
+    ["The server is refusing connections for now (too many attempts). Wait about an hour before trying again."] = {
+        fr = "Le serveur refuse les connexions pour le moment (trop de tentatives). Attendez environ une heure avant de réessayer.",
+        es = "El servidor rechaza las conexiones por ahora (demasiados intentos). Espere alrededor de una hora antes de volver a intentarlo.",
+        de = "Der Server lehnt Verbindungen vorübergehend ab (zu viele Versuche). Warten Sie etwa eine Stunde, bevor Sie es erneut versuchen.",
+    },
+    ["Automatic checks are paused until you change the server settings or a check succeeds."] = {
+        fr = "Les vérifications automatiques sont suspendues jusqu'à ce que vous modifiiez les réglages du serveur ou qu'une vérification réussisse.",
+        es = "Las comprobaciones automáticas están en pausa hasta que cambie los ajustes del servidor o una comprobación tenga éxito.",
+        de = "Automatische Prüfungen sind pausiert, bis Sie die Servereinstellungen ändern oder eine Prüfung gelingt.",
+    },
     ["Access denied by the server."] = { fr = "Accès refusé par le serveur.", es = "Acceso denegado por el servidor.", de = "Zugriff vom Server verweigert." },
     ["Book Drop: downloading %1/%2\n%3"] = { fr = "Boîte de dépôt : téléchargement %1/%2\n%3", es = "Buzón de libros: descargando %1/%2\n%3", de = "Bücher-Briefkasten: Download %1/%2\n%3" },
     ["Book Drop: some files could not be downloaded"] = { fr = "Boîte de dépôt : certains fichiers n'ont pas pu être téléchargés", es = "Buzón de libros: algunos archivos no se pudieron descargar", de = "Bücher-Briefkasten: einige Dateien konnten nicht heruntergeladen werden" },

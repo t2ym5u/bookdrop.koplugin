@@ -129,6 +129,18 @@ local function saveState(state)
     s:flush()
 end
 
+-- Pauses automatic checks after an error that retrying would make worse, and
+-- resumes them after any success.
+local function updatePause(res)
+    local s = S()
+    if res.ok then
+        s:delSetting("auto_paused")
+    elseif L.pausesAutoCheck(res.error) then
+        s:saveSetting("auto_paused", res.error)
+    end
+    s:flush()
+end
+
 local function isReading()
     local RUI = package.loaded["apps/reader/readerui"]
     return RUI ~= nil and RUI.instance ~= nil
@@ -147,6 +159,7 @@ local function errorText(key, code, detail)
     local texts = {
         auth = _("Wrong username or password.\n\nFor Koofr, use an app password (Koofr → Preferences → Password), not your account password."),
         forbidden = _("Access denied by the server."),
+        rate_limited = _("The server is refusing connections for now (too many attempts). Wait about an hour before trying again."),
         folder_missing = _("The drop folder could not be found or created. Check the folder name."),
         not_found = _("Not found on the server. Check the server address."),
         not_webdav = _("This address does not look like a WebDAV server. Check the server address."),
@@ -266,6 +279,7 @@ function BookDrop:autoCheck(trigger)
     local ok, why = L.shouldAutoCheck{
         enabled    = cfg.auto,
         configured = isConfigured(),
+        paused     = S():readSetting("auto_paused") ~= nil,
         in_flight  = in_flight,
         reading    = isReading(),
         now        = os.time(),
@@ -338,6 +352,7 @@ function BookDrop:runCheck(manual)
         delete_failed = res.delete_failed, rejected = res.rejected,
     })
     s:flush()
+    updatePause(res)
     self:report(res, manual, cfg)
 end
 
@@ -433,8 +448,9 @@ function BookDrop:editServer(touchmenu)
                 local s = S()
                 s:saveSetting("server", server)
                 s:saveSetting("username", L.trim(f[2] or ""))
-                s:saveSetting("password", f[3] or "")
+                s:saveSetting("password", L.trim(f[3] or ""))
                 s:saveSetting("folder", folder ~= "" and folder or L.DEFAULT_FOLDER)
+                s:delSetting("auto_paused")
                 s:flush()
                 UIManager:close(dialog)
                 if touchmenu then touchmenu:updateItems() end
@@ -471,6 +487,7 @@ function BookDrop:importFromCloudStorage(touchmenu)
                 s:saveSetting("server", srv.address)
                 s:saveSetting("username", srv.username or "")
                 s:saveSetting("password", srv.password or "")
+                s:delSetting("auto_paused")
                 s:flush()
                 if touchmenu then touchmenu:updateItems() end
                 UIManager:show(InfoMessage:new{
@@ -504,6 +521,7 @@ function BookDrop:testConnection()
             logger.err("bookdrop: test crashed:", r)
             r = { ok = false, error = "network", detail = tostring(r) }
         end
+        updatePause(r)
         local text
         if r.ok then
             text = _("Connection OK.")
@@ -576,7 +594,13 @@ end
 local function lastCheckDetails()
     local r = S():readSetting("last_result")
     if not r then return _("No check yet.") end
-    if not r.ok then return errorText(r.error, r.code, r.detail) end
+    if not r.ok then
+        local text = errorText(r.error, r.code, r.detail)
+        if S():readSetting("auto_paused") then
+            text = text .. "\n\n" .. _("Automatic checks are paused until you change the server settings or a check succeeds.")
+        end
+        return text
+    end
     local lines = { T(_("Books downloaded: %1"), r.downloaded or 0) }
     if (r.failed or 0) > 0 then
         lines[#lines + 1] = T(_("Not downloaded (left in the drop box, retried next time): %1"), r.failed)

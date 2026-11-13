@@ -50,7 +50,7 @@ function Sync:request(cfg, method, url, opts)
     for k, v in pairs(opts.headers or {}) do headers[k] = v end
     if cfg.username and cfg.username ~= "" then
         headers["Authorization"] = "Basic "
-            .. self.mime.b64(cfg.username .. ":" .. (cfg.password or ""))
+            .. self.mime.b64(L.credentials(cfg.username, cfg.password))
     end
     local source
     if opts.body then

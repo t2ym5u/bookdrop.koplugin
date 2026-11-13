@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.0.2] - 2026-11-13
+
+### Fixed
+- A space typed by mistake before or after the username or password no
+  longer makes the server refuse the login.
+- "Too many attempts" (HTTP 429) now has its own message instead of a bare
+  error code.
+- Automatic checks pause after a refused login or a 429, instead of retrying
+  every few minutes and keeping the server's block going. They resume when
+  the server settings change or a check succeeds.
+
 ## [1.0.1] - 2026-11-04
 
 ### Changed
