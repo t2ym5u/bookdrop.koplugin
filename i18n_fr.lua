@@ -1,6 +1,8 @@
 -- Translations for Book Drop (fr / es / de). Keys are the English strings
 -- used in main.lua, byte for byte.
 return {
+    -- _meta.lua description (shown by Plugin Manager, via the manifest)
+    ["Drop books into a WebDAV folder (Koofr, Nextcloud…) from your phone or computer; the reader fetches them on its own when online."] = { fr = "Déposez des livres dans un dossier WebDAV (Koofr, Nextcloud…) depuis votre téléphone ou votre ordinateur ; la liseuse les récupère seule dès qu'elle est en ligne.", es = "Deja libros en una carpeta WebDAV (Koofr, Nextcloud…) desde el móvil o el ordenador; el lector los descarga solo cuando tiene conexión.", de = "Bücher vom Handy oder Computer in einen WebDAV-Ordner (Koofr, Nextcloud…) legen; der Reader holt sie selbst ab, sobald er online ist." },
     ["Book Drop"] = { fr = "Boîte de dépôt", es = "Buzón de libros", de = "Bücher-Briefkasten" },
     ["Book Drop server"] = { fr = "Serveur de la boîte de dépôt", es = "Servidor del buzón de libros", de = "Server des Bücher-Briefkastens" },
     ["1 new book in Book Drop"] = { fr = "1 nouveau livre dans la boîte de dépôt", es = "1 libro nuevo en el buzón", de = "1 neues Buch im Bücher-Briefkasten" },
